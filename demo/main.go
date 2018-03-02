@@ -19,6 +19,6 @@ type Job struct {
 }
 
 func (this *Job) Do() {
-	//fmt.Println("do job")
+	fmt.Println("do job")
 	//time.Sleep( time.Second * 3)
 }

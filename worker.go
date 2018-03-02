@@ -6,8 +6,9 @@ type worker struct {
 	quit chan struct{}
 }
 
-func NewWorker() *worker {
+func NewWorker(pool *taskPool) *worker {
 	var w = &worker{}
+	w.pool = pool
 	w.task = make(chan Task)
 	return w
 }
