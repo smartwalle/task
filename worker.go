@@ -10,6 +10,7 @@ func NewWorker(pool *taskPool) *worker {
 	var w = &worker{}
 	w.pool = pool
 	w.task = make(chan Task)
+	w.quit = make(chan struct{})
 	return w
 }
 

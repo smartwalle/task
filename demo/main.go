@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	var p = task4go.NewTaskPool()
+	var p = task4go.NewTaskPool(5)
 	for i:=0;i <1000000; i++ {
 		p.AddTask(&Job{})
 	}
