@@ -13,6 +13,10 @@ func main() {
 		p.AddTask(&Job{i: i})
 	}
 
+	time.Sleep(time.Second * 3)
+	p.Stop()
+
+	time.Sleep(time.Second * 10)
 	fmt.Println(time.Now().Sub(t))
 }
 
@@ -22,6 +26,7 @@ type Job struct {
 
 func (this *Job) Do() {
 	for i := 0; i < 1000000; i++ {
+		//fmt.Println("ee")
 	}
 	//this.w.Done()
 	//fmt.Println("do job", this.i)

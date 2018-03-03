@@ -6,26 +6,31 @@ import (
 )
 
 type taskPool struct {
-	maxWorker  int
-	workerList chan *worker
-	taskEvent  chan struct{}
-	taskList   slist.List
-	stopEvent  chan struct{}
+	maxWorker    int
+
+	workerList  chan *worker
+
+	taskEvent chan struct{}
+	taskList  slist.List
+
+	stopEvent chan struct{}
 }
 
 func NewTaskPool(maxWorker int) *taskPool {
 	var p = &taskPool{}
 	p.maxWorker = maxWorker
+
 	p.workerList = make(chan *worker, maxWorker)
 	p.taskEvent = make(chan struct{}, math.MaxInt32)
 	p.taskList = slist.New()
 	p.stopEvent = make(chan struct{})
 
-	for i := 0; i < maxWorker; i++ {
+	for i:=0; i<maxWorker; i++ {
 		var w = NewWorker(p)
-		w.Start()
+		w.start()
 		p.addWorker(w)
 	}
+
 	p.run()
 
 	return p
@@ -36,7 +41,7 @@ func (this *taskPool) addWorker(w *worker) {
 }
 
 func (this *taskPool) getWorker() *worker {
-	var w = <-this.workerList
+	var w = <- this.workerList
 	return w
 }
 
@@ -56,7 +61,7 @@ func (this *taskPool) run() {
 				var w = this.getWorker()
 				var t = this.taskList.PopFront()
 				if t != nil {
-					w.Do(t.(Task))
+					w.do(t.(Task))
 				}
 			case <-this.stopEvent:
 				return
