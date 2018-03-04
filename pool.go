@@ -26,7 +26,7 @@ func NewTaskPool(maxWorker int) *taskPool {
 	p.stopEvent = make(chan struct{})
 
 	for i:=0; i<maxWorker; i++ {
-		var w = NewWorker(p)
+		var w = newWorker(p)
 		w.start()
 		p.addWorker(w)
 	}
