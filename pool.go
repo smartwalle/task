@@ -3,33 +3,26 @@ package task4go
 import (
 	"github.com/smartwalle/container/slist"
 	"math"
+	"sync"
 )
 
 type taskPool struct {
-	maxWorker    int
+	maxWorker int
+	running   bool
+	mu sync.Mutex
 
-	workerList  chan *worker
+	workerList chan *worker
 
 	taskEvent chan struct{}
 	taskList  slist.List
 
-	stopEvent chan struct{}
+	stopEvent       chan struct{}
+	stopWorkerEvent chan chan struct{}
 }
 
 func NewTaskPool(maxWorker int) *taskPool {
 	var p = &taskPool{}
 	p.maxWorker = maxWorker
-
-	p.workerList = make(chan *worker, maxWorker)
-	p.taskEvent = make(chan struct{}, math.MaxInt32)
-	p.taskList = slist.New()
-	p.stopEvent = make(chan struct{})
-
-	for i:=0; i<maxWorker; i++ {
-		var w = newWorker(p)
-		w.start()
-		p.addWorker(w)
-	}
 
 	p.run()
 
@@ -41,7 +34,7 @@ func (this *taskPool) addWorker(w *worker) {
 }
 
 func (this *taskPool) getWorker() *worker {
-	var w = <- this.workerList
+	var w = <-this.workerList
 	return w
 }
 
@@ -53,7 +46,31 @@ func (this *taskPool) AddTask(task Task) {
 	this.taskEvent <- struct{}{}
 }
 
+func (this *taskPool) Run() {
+	this.run()
+}
+
 func (this *taskPool) run() {
+	this.mu.Lock()
+	if this.running {
+		this.mu.Unlock()
+		return
+	}
+
+	this.running = true
+	this.workerList = make(chan *worker, this.maxWorker)
+	this.taskEvent = make(chan struct{}, math.MaxInt32)
+	this.taskList = slist.New()
+	this.stopEvent = make(chan struct{})
+	this.stopWorkerEvent = make(chan chan struct{}, this.maxWorker)
+
+	for i := 0; i < this.maxWorker; i++ {
+		var w = newWorker(this)
+		w.start()
+		this.addWorker(w)
+	}
+	this.mu.Unlock()
+
 	go func() {
 		for {
 			select {
@@ -64,6 +81,7 @@ func (this *taskPool) run() {
 					w.do(t.(Task))
 				}
 			case <-this.stopEvent:
+				this.running = false
 				return
 			}
 		}
@@ -71,5 +89,17 @@ func (this *taskPool) run() {
 }
 
 func (this *taskPool) Stop() {
+	this.mu.Lock()
+	defer this.mu.Unlock()
+
+	if this.running == false {
+		return
+	}
+
 	this.stopEvent <- struct{}{}
+
+	for i := 0; i < this.maxWorker; i++ {
+		var w = this.getWorker()
+		w.stop()
+	}
 }

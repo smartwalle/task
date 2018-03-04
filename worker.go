@@ -11,6 +11,9 @@ func newWorker(pool *taskPool) *worker {
 	w.pool = pool
 	w.task = make(chan Task)
 	w.quit = make(chan struct{})
+
+	pool.stopWorkerEvent <- w.quit
+
 	return w
 }
 
