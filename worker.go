@@ -2,14 +2,14 @@ package task4go
 
 type worker struct {
 	pool *taskPool
-	task chan Task
+	task chan func()
 	quit chan struct{}
 }
 
 func newWorker(pool *taskPool) *worker {
 	var w = &worker{}
 	w.pool = pool
-	w.task = make(chan Task)
+	w.task = make(chan func())
 	w.quit = make(chan struct{})
 
 	pool.stopWorkerEvent <- w.quit
@@ -23,7 +23,7 @@ func (this *worker) start() {
 			select {
 			case t := <-this.task:
 				if t != nil {
-					t.Do()
+					t()
 				}
 
 				if this.pool != nil {
@@ -40,6 +40,6 @@ func (this *worker) stop() {
 	this.quit <- struct{}{}
 }
 
-func (this *worker) do(task Task) {
+func (this *worker) do(task func()) {
 	this.task <- task
 }

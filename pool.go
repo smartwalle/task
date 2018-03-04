@@ -38,7 +38,7 @@ func (this *taskPool) getWorker() *worker {
 	return w
 }
 
-func (this *taskPool) AddTask(task Task) {
+func (this *taskPool) AddTask(task func()) {
 	if task == nil {
 		return
 	}
@@ -78,7 +78,7 @@ func (this *taskPool) run() {
 				var w = this.getWorker()
 				var t = this.taskList.PopFront()
 				if t != nil {
-					w.do(t.(Task))
+					w.do(t.(func()))
 				}
 			case <-this.stopEvent:
 				this.running = false

@@ -16,7 +16,8 @@ func main() {
 	p.Run()
 	for i:=0;i <1000000; i++ {
 		w.Add(1)
-		p.AddTask(&Job{i: i, w: w})
+		var j = Job{i: i, w: w}
+		p.AddTask(j.Do)
 	}
 	w.Wait()
 	fmt.Println(time.Now().Sub(t))
