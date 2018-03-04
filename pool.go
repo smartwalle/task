@@ -24,6 +24,9 @@ func NewTaskPool(maxWorker int) *taskPool {
 	var p = &taskPool{}
 	p.maxWorker = maxWorker
 
+	p.taskList = slist.New()
+	p.taskEvent = make(chan struct{}, math.MaxInt32)
+
 	p.run()
 
 	return p
@@ -59,8 +62,6 @@ func (this *taskPool) run() {
 
 	this.running = true
 	this.workerList = make(chan *worker, this.maxWorker)
-	this.taskEvent = make(chan struct{}, math.MaxInt32)
-	this.taskList = slist.New()
 	this.stopEvent = make(chan struct{})
 	this.stopWorkerEvent = make(chan chan struct{}, this.maxWorker)
 
@@ -102,4 +103,6 @@ func (this *taskPool) Stop() {
 		var w = this.getWorker()
 		w.stop()
 	}
+	close(this.workerList)
+	close(this.stopWorkerEvent)
 }

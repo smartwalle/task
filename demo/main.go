@@ -33,6 +33,6 @@ func (this *Job) Do() {
 	//	//fmt.Println("ee")
 	//}
 	this.w.Done()
-	//fmt.Println("do job", this.i)
+	fmt.Println("do job", this.i)
 	//time.Sleep( time.Second * 3)
 }
