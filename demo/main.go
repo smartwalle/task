@@ -28,9 +28,9 @@ type Job struct {
 }
 
 func (this *Job) Do() {
-	for i := 0; i < 1000000; i++ {
-		//fmt.Println("ee")
-	}
+	//for i := 0; i < 1000000; i++ {
+	//	//fmt.Println("ee")
+	//}
 	this.w.Done()
 	//fmt.Println("do job", this.i)
 	//time.Sleep( time.Second * 3)
