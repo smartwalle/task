@@ -82,7 +82,6 @@ func (this *taskPool) run() {
 					w.do(t.(func()))
 				}
 			case <-this.stopEvent:
-				this.running = false
 				return
 			}
 		}
@@ -98,6 +97,7 @@ func (this *taskPool) Stop() {
 	}
 
 	this.stopEvent <- struct{}{}
+	this.running = false
 
 	for i := 0; i < this.maxWorker; i++ {
 		var w = this.getWorker()
