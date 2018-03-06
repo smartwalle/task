@@ -2,6 +2,7 @@ package task4go
 
 import (
 	"github.com/smartwalle/container/slist"
+	"github.com/smartwalle/pool4go"
 	"math"
 	"sync"
 )
@@ -9,15 +10,14 @@ import (
 type taskPool struct {
 	maxWorker int
 	running   bool
-	mu sync.Mutex
+	mu        sync.Mutex
 
-	workerList chan *worker
+	workerPool *pool4go.Pool
 
 	taskEvent chan struct{}
 	taskList  slist.List
 
-	stopEvent       chan struct{}
-	//stopWorkerEvent chan chan struct{}
+	stopEvent chan struct{}
 }
 
 func NewTaskPool(maxWorker int) *taskPool {
@@ -33,12 +33,15 @@ func NewTaskPool(maxWorker int) *taskPool {
 }
 
 func (this *taskPool) addWorker(w *worker) {
-	this.workerList <- w
+	this.workerPool.Release(w, false)
 }
 
 func (this *taskPool) getWorker() *worker {
-	var w = <-this.workerList
-	return w
+	var conn, err = this.workerPool.Get()
+	if err != nil {
+		return nil
+	}
+	return conn.(*worker)
 }
 
 func (this *taskPool) AddTask(task func()) {
@@ -61,15 +64,13 @@ func (this *taskPool) run() {
 	}
 
 	this.running = true
-	this.workerList = make(chan *worker, this.maxWorker)
-	this.stopEvent = make(chan struct{})
-	//this.stopWorkerEvent = make(chan chan struct{}, this.maxWorker)
-
-	for i := 0; i < this.maxWorker; i++ {
+	this.workerPool = pool4go.NewPool(func() (pool4go.Connection, error) {
 		var w = newWorker(this)
 		w.start()
-		this.addWorker(w)
-	}
+		return w, nil
+	}, this.maxWorker)
+	this.stopEvent = make(chan struct{})
+
 	this.mu.Unlock()
 
 	go func() {
@@ -78,7 +79,7 @@ func (this *taskPool) run() {
 			case <-this.taskEvent:
 				var w = this.getWorker()
 				var t = this.taskList.PopFront()
-				if t != nil {
+				if t != nil && w != nil {
 					w.do(t.(func()))
 				}
 			case <-this.stopEvent:
@@ -103,6 +104,4 @@ func (this *taskPool) Stop() {
 		var w = this.getWorker()
 		w.stop()
 	}
-	close(this.workerList)
-	//close(this.stopWorkerEvent)
 }

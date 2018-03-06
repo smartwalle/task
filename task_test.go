@@ -1,6 +1,8 @@
 package task4go
 
-import "testing"
+import (
+	"testing"
+)
 
 func Benchmark_Do(b *testing.B) {
 	var p = NewTaskPool(5)

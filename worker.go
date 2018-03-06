@@ -11,9 +11,6 @@ func newWorker(pool *taskPool) *worker {
 	w.pool = pool
 	w.task = make(chan func())
 	w.done = make(chan struct{})
-
-	//pool.stopWorkerEvent <- w.done
-
 	return w
 }
 
@@ -42,4 +39,9 @@ func (this *worker) stop() {
 
 func (this *worker) do(task func()) {
 	this.task <- task
+}
+
+func (this *worker) Close() error {
+	this.stop()
+	return nil
 }
