@@ -69,6 +69,7 @@ func (this *taskPool) run() {
 		w.start()
 		return w, nil
 	}, this.maxWorker)
+	this.workerPool.MaxActive = this.maxWorker
 	this.stopEvent = make(chan struct{})
 
 	this.mu.Unlock()
