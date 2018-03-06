@@ -64,7 +64,7 @@ func (this *taskPool) run() {
 	}
 
 	this.running = true
-	this.workerPool = pool4go.NewPool(func() (pool4go.Connection, error) {
+	this.workerPool = pool4go.NewPool(func() (pool4go.Conn, error) {
 		var w = newWorker(this)
 		w.start()
 		return w, nil
