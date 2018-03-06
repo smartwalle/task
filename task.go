@@ -104,4 +104,5 @@ func (this *taskPool) Stop() {
 		var w = this.getWorker()
 		w.stop()
 	}
+	this.workerPool.Close()
 }
