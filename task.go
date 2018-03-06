@@ -17,7 +17,7 @@ type taskPool struct {
 	taskList  slist.List
 
 	stopEvent       chan struct{}
-	stopWorkerEvent chan chan struct{}
+	//stopWorkerEvent chan chan struct{}
 }
 
 func NewTaskPool(maxWorker int) *taskPool {
@@ -63,7 +63,7 @@ func (this *taskPool) run() {
 	this.running = true
 	this.workerList = make(chan *worker, this.maxWorker)
 	this.stopEvent = make(chan struct{})
-	this.stopWorkerEvent = make(chan chan struct{}, this.maxWorker)
+	//this.stopWorkerEvent = make(chan chan struct{}, this.maxWorker)
 
 	for i := 0; i < this.maxWorker; i++ {
 		var w = newWorker(this)
@@ -104,5 +104,5 @@ func (this *taskPool) Stop() {
 		w.stop()
 	}
 	close(this.workerList)
-	close(this.stopWorkerEvent)
+	//close(this.stopWorkerEvent)
 }
