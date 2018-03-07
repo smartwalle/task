@@ -116,3 +116,11 @@ func (this *TaskPool) SetMaxWorker(n int) {
 		this.workerPool.SetMaxOpenConns(this.maxWorker)
 	}
 }
+
+func (this *TaskPool) MaxWorker() int {
+	return this.maxWorker
+}
+
+func (this *TaskPool) NumTask() int {
+	return this.taskList.Len()
+}

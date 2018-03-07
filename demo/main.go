@@ -15,7 +15,7 @@ func main() {
 	for i:=0; i<10000000; i++ {
 		p.AddTask(Do)
 	}
-	fmt.Println("添加了 10000000 个任务")
+	fmt.Println("添加了 10000000 个任务，剩余任务：", p.NumTask())
 	fmt.Println("由于 TaskPool 设置的 max worker 为 5，所以此时 Goroutine 的数量为 7：", runtime.NumGoroutine())
 	p.Stop()
 	time.Sleep(time.Second*5)
@@ -28,6 +28,7 @@ func main() {
 	time.Sleep(time.Second*5)
 	p.Stop()
 	time.Sleep(time.Second*5)
+	fmt.Println("剩余任务：", p.NumTask())
 	fmt.Println("TaskPool 停止，主 Goroutine 暂停了 5 秒，理论上 TaskPool 的 worker 都已结束运行，所以 Goroutine 的数量为 1：", runtime.NumGoroutine())
 
 	p.Run()
@@ -37,11 +38,12 @@ func main() {
 
 	p.SetMaxWorker(3)
 	time.Sleep(time.Second * 5)
-	fmt.Println("将 TaskPool 的 max worker 降到 3 个，所以 Goroutine 的数量为 5：", runtime.NumGoroutine())
+	fmt.Println("将 TaskPool 的 max worker 降到 3 个，所以 Goroutine 的数量约为 5：", runtime.NumGoroutine())
 
 	p.SetMaxWorker(6)
 	time.Sleep(time.Second * 5)
-	fmt.Println("将 TaskPool 的 max worker 升到 6 个，所以 Goroutine 的数量为 8：", runtime.NumGoroutine())
+	fmt.Println("将 TaskPool 的 max worker 升到 6 个，所以 Goroutine 的数量约为 8：", runtime.NumGoroutine())
+	fmt.Println("剩余任务：", p.NumTask())
 }
 
 func Do() {
