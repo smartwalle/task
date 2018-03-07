@@ -20,6 +20,7 @@ func main() {
 	p.Stop()
 	time.Sleep(time.Second*5)
 	fmt.Println("TaskPool 停止，主 Goroutine 暂停了 5 秒，理论上 TaskPool 的 worker 都已结束运行，所以 Goroutine 的数量为 1：", runtime.NumGoroutine())
+
 	p.Run()
 	fmt.Println("重新启动 TaskPool，此时至少有 2 个 Goroutine：", runtime.NumGoroutine())
 	time.Sleep(time.Second*5)
@@ -28,13 +29,19 @@ func main() {
 	p.Stop()
 	time.Sleep(time.Second*5)
 	fmt.Println("TaskPool 停止，主 Goroutine 暂停了 5 秒，理论上 TaskPool 的 worker 都已结束运行，所以 Goroutine 的数量为 1：", runtime.NumGoroutine())
+
 	p.Run()
 	fmt.Println("再次启动 TaskPool，此时至少有 2 个 Goroutine：", runtime.NumGoroutine())
 	time.Sleep(time.Second*5)
 	fmt.Println("主 Goroutine 暂停了 5 秒，理论上 TaskPool 的 5 个 worker 都已开始运行，所以 Goroutine 的数量为 7：", runtime.NumGoroutine())
-	p.Stop()
-	time.Sleep(time.Second*5)
-	fmt.Println("TaskPool 停止，主 Goroutine 暂停了 5 秒，理论上 TaskPool 的 worker 都已结束运行，所以 Goroutine 的数量为 1：", runtime.NumGoroutine())
+
+	p.SetMaxWorker(3)
+	time.Sleep(time.Second * 5)
+	fmt.Println("将 TaskPool 的 max worker 降到 3 个，所以 Goroutine 的数量为 5：", runtime.NumGoroutine())
+
+	p.SetMaxWorker(6)
+	time.Sleep(time.Second * 5)
+	fmt.Println("将 TaskPool 的 max worker 升到 6 个，所以 Goroutine 的数量为 8：", runtime.NumGoroutine())
 }
 
 func Do() {

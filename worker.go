@@ -1,12 +1,12 @@
 package task4go
 
 type worker struct {
-	pool *taskPool
+	pool *TaskPool
 	task chan func()
 	done chan struct{}
 }
 
-func newWorker(pool *taskPool) *worker {
+func newWorker(pool *TaskPool) *worker {
 	var w = &worker{}
 	w.pool = pool
 	w.task = make(chan func())

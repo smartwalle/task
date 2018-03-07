@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type taskPool struct {
+type TaskPool struct {
 	maxWorker int
 	running   bool
 	mu        sync.Mutex
@@ -20,8 +20,8 @@ type taskPool struct {
 	stopEvent chan struct{}
 }
 
-func NewTaskPool(maxWorker int) *taskPool {
-	var p = &taskPool{}
+func NewTaskPool(maxWorker int) *TaskPool {
+	var p = &TaskPool{}
 	p.maxWorker = maxWorker
 
 	p.taskList = slist.New()
@@ -32,11 +32,11 @@ func NewTaskPool(maxWorker int) *taskPool {
 	return p
 }
 
-func (this *taskPool) addWorker(w *worker) {
+func (this *TaskPool) addWorker(w *worker) {
 	this.workerPool.Release(w, false)
 }
 
-func (this *taskPool) getWorker() *worker {
+func (this *TaskPool) getWorker() *worker {
 	var conn, err = this.workerPool.Get()
 	if err != nil {
 		return nil
@@ -44,7 +44,7 @@ func (this *taskPool) getWorker() *worker {
 	return conn.(*worker)
 }
 
-func (this *taskPool) AddTask(task func()) {
+func (this *TaskPool) AddTask(task func()) {
 	if task == nil {
 		return
 	}
@@ -52,11 +52,11 @@ func (this *taskPool) AddTask(task func()) {
 	this.taskEvent <- struct{}{}
 }
 
-func (this *taskPool) Run() {
+func (this *TaskPool) Run() {
 	this.run()
 }
 
-func (this *taskPool) run() {
+func (this *TaskPool) run() {
 	this.mu.Lock()
 	if this.running {
 		this.mu.Unlock()
@@ -68,8 +68,9 @@ func (this *taskPool) run() {
 		var w = newWorker(this)
 		w.start()
 		return w, nil
-	}, this.maxWorker)
-	this.workerPool.MaxActive = this.maxWorker
+	})
+	this.workerPool.SetMaxIdleConns(this.maxWorker)
+	this.workerPool.SetMaxOpenConns(this.maxWorker)
 	this.stopEvent = make(chan struct{})
 
 	this.mu.Unlock()
@@ -90,7 +91,7 @@ func (this *taskPool) run() {
 	}()
 }
 
-func (this *taskPool) Stop() {
+func (this *TaskPool) Stop() {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
@@ -106,4 +107,12 @@ func (this *taskPool) Stop() {
 		w.stop()
 	}
 	this.workerPool.Close()
+	this.workerPool = nil
+}
+
+func (this *TaskPool) SetMaxWorker(n int) {
+	this.maxWorker = n
+	if this.workerPool != nil {
+		this.workerPool.SetMaxOpenConns(this.maxWorker)
+	}
 }
