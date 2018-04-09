@@ -1,8 +1,8 @@
 package task4go
 
 import (
-	"testing"
 	"os"
+	"testing"
 )
 
 var p *TaskPool
@@ -14,7 +14,7 @@ func TestMain(m *testing.M) {
 }
 
 func Benchmark_Do(b *testing.B) {
-	for i:=0; i<b.N; i++ {
+	for i := 0; i < b.N; i++ {
 		p.AddTask(Do)
 	}
 }
