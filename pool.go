@@ -1,7 +1,6 @@
 package task4go
 
 import (
-	"github.com/smartwalle/container/slist"
 	"github.com/smartwalle/pool4go"
 	"math"
 	"sync"
@@ -9,23 +8,21 @@ import (
 
 type TaskPool struct {
 	maxWorker int
-	running   bool
+	isRunning bool
 	mu        sync.Mutex
 
 	workerPool *pool4go.Pool
 
-	taskEvent chan struct{}
-	taskList  slist.List
+	taskList chan func()
 
-	stopEvent chan struct{}
+	done chan struct{}
 }
 
 func NewTaskPool(maxWorker int) *TaskPool {
 	var p = &TaskPool{}
 	p.maxWorker = maxWorker
 
-	p.taskList = slist.New()
-	p.taskEvent = make(chan struct{}, math.MaxInt32)
+	p.taskList = make(chan func(), math.MaxInt32)
 
 	p.run()
 
@@ -33,12 +30,17 @@ func NewTaskPool(maxWorker int) *TaskPool {
 }
 
 func (this *TaskPool) addWorker(w *worker) {
-	this.workerPool.Release(w, false)
+	if this.workerPool != nil {
+		this.workerPool.Release(w, false)
+	}
 }
 
 func (this *TaskPool) getWorker() *worker {
+	if this.workerPool == nil {
+		return nil
+	}
 	var conn, err = this.workerPool.Get()
-	if err != nil {
+	if err != nil || conn == nil {
 		return nil
 	}
 	return conn.(*worker)
@@ -48,8 +50,11 @@ func (this *TaskPool) AddTask(task func()) {
 	if task == nil {
 		return
 	}
-	this.taskList.PushBack(task)
-	this.taskEvent <- struct{}{}
+
+	select {
+	case this.taskList <- task:
+	default:
+	}
 }
 
 func (this *TaskPool) Run() {
@@ -58,12 +63,12 @@ func (this *TaskPool) Run() {
 
 func (this *TaskPool) run() {
 	this.mu.Lock()
-	if this.running {
+	if this.isRunning {
 		this.mu.Unlock()
 		return
 	}
 
-	this.running = true
+	this.isRunning = true
 	this.workerPool = pool4go.NewPool(func() (pool4go.Conn, error) {
 		var w = newWorker(this)
 		w.start()
@@ -71,22 +76,25 @@ func (this *TaskPool) run() {
 	})
 	this.workerPool.SetMaxIdleConns(this.maxWorker)
 	this.workerPool.SetMaxOpenConns(this.maxWorker)
-	this.stopEvent = make(chan struct{})
+	this.done = make(chan struct{}, 1)
 
 	this.mu.Unlock()
 
 	go func() {
 		for {
 			select {
-			case <-this.taskEvent:
-				var t = this.taskList.PopFront()
+			case t, ok := <-this.taskList:
+				if !ok {
+					return
+				}
+
 				if t != nil {
 					var w = this.getWorker()
 					if w != nil {
-						w.do(t.(func()))
+						w.do(t)
 					}
 				}
-			case <-this.stopEvent:
+			case <-this.done:
 				return
 			}
 		}
@@ -97,17 +105,13 @@ func (this *TaskPool) Stop() {
 	this.mu.Lock()
 	defer this.mu.Unlock()
 
-	if this.running == false {
+	if this.isRunning == false {
 		return
 	}
 
-	this.stopEvent <- struct{}{}
-	this.running = false
+	close(this.done)
+	this.isRunning = false
 
-	for i := 0; i < this.maxWorker; i++ {
-		var w = this.getWorker()
-		w.stop()
-	}
 	this.workerPool.Close()
 	this.workerPool = nil
 }
@@ -125,5 +129,5 @@ func (this *TaskPool) MaxWorker() int {
 }
 
 func (this *TaskPool) NumTask() int {
-	return this.taskList.Len()
+	return len(this.taskList)
 }
