@@ -79,10 +79,12 @@ func (this *TaskPool) run() {
 		for {
 			select {
 			case <-this.taskEvent:
-				var w = this.getWorker()
 				var t = this.taskList.PopFront()
-				if t != nil && w != nil {
-					w.do(t.(func()))
+				if t != nil {
+					var w = this.getWorker()
+					if w != nil {
+						w.do(t.(func()))
+					}
 				}
 			case <-this.stopEvent:
 				return
@@ -114,6 +116,7 @@ func (this *TaskPool) SetMaxWorker(n int) {
 	this.maxWorker = n
 	if this.workerPool != nil {
 		this.workerPool.SetMaxOpenConns(this.maxWorker)
+		this.workerPool.SetMaxIdleConns(this.maxWorker)
 	}
 }
 
