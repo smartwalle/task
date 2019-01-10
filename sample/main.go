@@ -5,6 +5,8 @@ import (
 	"github.com/smartwalle/task4go"
 	"runtime"
 	"time"
+
+	_ "net/http/pprof"
 )
 
 func main() {
@@ -44,15 +46,6 @@ func main() {
 	time.Sleep(time.Second * 5)
 	fmt.Println("将 TaskPool 的 max worker 升到 6 个，所以 Goroutine 的数量约为 8：", runtime.NumGoroutine())
 	fmt.Println("剩余任务：", p.NumTask())
-
-	var t = time.NewTicker(time.Second * 10)
-
-	for {
-		select {
-		case <-t.C:
-			fmt.Println("剩余任务：", p.NumTask())
-		}
-	}
 }
 
 func Do() {

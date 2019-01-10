@@ -1,10 +1,15 @@
 package task4go
 
 import (
+	"github.com/smartwalle/container/slist"
 	"github.com/smartwalle/pool4go"
 	"math"
 	"sync"
 )
+
+type task struct {
+	f func()
+}
 
 type TaskPool struct {
 	maxWorker int
@@ -13,7 +18,8 @@ type TaskPool struct {
 
 	workerPool *pool4go.Pool
 
-	taskList chan func()
+	taskEvent chan struct{}
+	taskList  slist.List
 
 	done chan struct{}
 }
@@ -22,7 +28,8 @@ func NewTaskPool(maxWorker int) *TaskPool {
 	var p = &TaskPool{}
 	p.maxWorker = maxWorker
 
-	p.taskList = make(chan func(), math.MaxInt32)
+	p.taskList = slist.New()
+	p.taskEvent = make(chan struct{}, math.MaxInt32)
 
 	p.run()
 
@@ -51,8 +58,10 @@ func (this *TaskPool) AddTask(task func()) {
 		return
 	}
 
+	this.taskList.PushBack(task)
+
 	select {
-	case this.taskList <- task:
+	case this.taskEvent <- struct{}{}:
 	default:
 	}
 }
@@ -83,15 +92,16 @@ func (this *TaskPool) run() {
 	go func() {
 		for {
 			select {
-			case t, ok := <-this.taskList:
+			case _, ok := <-this.taskEvent:
 				if !ok {
 					return
 				}
 
+				var t = this.taskList.PopFront()
 				if t != nil {
 					var w = this.getWorker()
 					if w != nil {
-						w.do(t)
+						w.do(t.(func()))
 					}
 				}
 			case <-this.done:
@@ -129,5 +139,5 @@ func (this *TaskPool) MaxWorker() int {
 }
 
 func (this *TaskPool) NumTask() int {
-	return len(this.taskList)
+	return len(this.taskEvent)
 }
