@@ -7,10 +7,6 @@ import (
 	"sync"
 )
 
-type task struct {
-	f func()
-}
-
 type TaskPool struct {
 	maxWorker int
 	isRunning bool
