@@ -17,7 +17,7 @@ type TaskPool struct {
 	taskEvent chan struct{}
 	taskList  slist.List
 
-	done chan struct{}
+	closeChan chan struct{}
 }
 
 func NewTaskPool(maxWorker int) *TaskPool {
@@ -81,7 +81,7 @@ func (this *TaskPool) run() {
 	})
 	this.workerPool.SetMaxIdleConns(this.maxWorker)
 	this.workerPool.SetMaxOpenConns(this.maxWorker)
-	this.done = make(chan struct{}, 1)
+	this.closeChan = make(chan struct{}, 1)
 
 	this.mu.Unlock()
 
@@ -100,7 +100,7 @@ func (this *TaskPool) run() {
 						w.do(t.(func()))
 					}
 				}
-			case <-this.done:
+			case <-this.closeChan:
 				return
 			}
 		}
@@ -115,7 +115,7 @@ func (this *TaskPool) Stop() {
 		return
 	}
 
-	close(this.done)
+	close(this.closeChan)
 	this.isRunning = false
 
 	this.workerPool.Close()

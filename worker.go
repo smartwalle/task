@@ -1,6 +1,9 @@
 package task4go
 
+import "sync"
+
 type worker struct {
+	mu   sync.Mutex
 	pool *TaskPool
 	task chan func()
 }
@@ -28,7 +31,7 @@ func (this *worker) start() {
 				if this.pool != nil {
 					this.pool.addWorker(this)
 				}
-			case <-this.pool.done:
+			case <-this.pool.closeChan:
 				return
 			}
 		}
@@ -36,13 +39,18 @@ func (this *worker) start() {
 }
 
 func (this *worker) do(task func()) {
+	this.mu.Lock()
 	select {
 	case this.task <- task:
 	default:
 	}
+	this.mu.Unlock()
 }
 
 func (this *worker) Close() error {
+	this.mu.Lock()
 	close(this.task)
+	this.task = nil
+	this.mu.Unlock()
 	return nil
 }
