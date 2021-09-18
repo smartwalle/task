@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 )
 
-type Pool struct {
+type Manager struct {
 	worker   int
 	queue    *internal.Queue
 	dispatch chan *internal.Task
@@ -14,12 +14,12 @@ type Pool struct {
 	waiter   Waiter
 }
 
-func New(worker int, waiter Waiter) *Pool {
+func New(worker int, waiter Waiter) *Manager {
 	if waiter == nil {
 		waiter = &sync.WaitGroup{}
 	}
 
-	var p = &Pool{}
+	var p = &Manager{}
 	p.worker = worker
 	p.queue = internal.NewQueue()
 	p.dispatch = make(chan *internal.Task, 1)
@@ -28,7 +28,7 @@ func New(worker int, waiter Waiter) *Pool {
 	return p
 }
 
-func (this *Pool) Run() {
+func (this *Manager) Run() {
 	for i := 0; i < this.worker; i++ {
 		this.waiter.Add(1)
 		var w = internal.NewWorker(i+1, this.dispatch)
@@ -57,14 +57,14 @@ func (this *Pool) Run() {
 	}()
 }
 
-func (this *Pool) Close() {
+func (this *Manager) Close() {
 	if atomic.LoadInt32(&this.closed) == 1 {
 		return
 	}
 	this.queue.Enqueue(nil)
 }
 
-func (this *Pool) Add(fn func(payload interface{}), payload interface{}) {
+func (this *Manager) Add(fn func(payload interface{}), payload interface{}) {
 	if fn == nil {
 		return
 	}
