@@ -10,6 +10,7 @@ type Manager struct {
 	worker   int
 	queue    *internal.Queue
 	dispatch chan *internal.Task
+	runOnce  sync.Once
 	closed   int32
 	waiter   Waiter
 }
@@ -29,6 +30,9 @@ func New(worker int, waiter Waiter) *Manager {
 }
 
 func (this *Manager) Run() {
+	this.runOnce.Do(this.run)
+}
+func (this *Manager) run() {
 	for i := 0; i < this.worker; i++ {
 		this.waiter.Add(1)
 		var w = internal.NewWorker(i+1, this.dispatch)

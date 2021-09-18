@@ -40,7 +40,3 @@ func (this *Queue) Dequeue(tasks *[]*Task) {
 	this.tasks = this.tasks[0:0]
 	this.cond.L.Unlock()
 }
-
-func (this *Queue) Close() {
-
-}
