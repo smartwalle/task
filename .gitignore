@@ -14,4 +14,5 @@
 *.out
 
 .idea
-task4go.iml
+.DS_Store
+*.iml
