@@ -1,139 +1,78 @@
 package task4go
 
 import (
-	"github.com/smartwalle/container/slist"
-	"github.com/smartwalle/pool4go"
-	"math"
+	"github.com/smartwalle/task4go/internal"
 	"sync"
+	"sync/atomic"
 )
 
-type TaskPool struct {
-	maxWorker int
-	isRunning bool
-	mu        sync.Mutex
-
-	workerPool *pool4go.Pool
-
-	taskEvent chan struct{}
-	taskList  slist.List
-
-	closeChan chan struct{}
+type Pool struct {
+	worker   int
+	queue    *internal.Queue
+	dispatch chan *internal.Task
+	closed   int32
+	waiter   Waiter
 }
 
-func NewTaskPool(maxWorker int) *TaskPool {
-	var p = &TaskPool{}
-	p.maxWorker = maxWorker
+func New(worker int, waiter Waiter) *Pool {
+	if waiter == nil {
+		waiter = &sync.WaitGroup{}
+	}
 
-	p.taskList = slist.New()
-	p.taskEvent = make(chan struct{}, math.MaxInt32)
-
-	p.run()
-
+	var p = &Pool{}
+	p.worker = worker
+	p.queue = internal.NewQueue()
+	p.dispatch = make(chan *internal.Task, 1)
+	p.closed = 0
+	p.waiter = waiter
 	return p
 }
 
-func (this *TaskPool) addWorker(w *worker) {
-	if this.workerPool != nil {
-		this.workerPool.Release(w, false)
+func (this *Pool) Run() {
+	for i := 0; i < this.worker; i++ {
+		this.waiter.Add(1)
+		var w = internal.NewWorker(i+1, this.dispatch)
+		go func() {
+			w.Run()
+			this.waiter.Done()
+		}()
 	}
-}
-
-func (this *TaskPool) getWorker() *worker {
-	if this.workerPool == nil {
-		return nil
-	}
-	var conn, err = this.workerPool.Get()
-	if err != nil || conn == nil {
-		return nil
-	}
-	return conn.(*worker)
-}
-
-func (this *TaskPool) AddTask(task func()) {
-	if task == nil {
-		return
-	}
-
-	this.taskList.PushBack(task)
-
-	select {
-	case this.taskEvent <- struct{}{}:
-	default:
-	}
-}
-
-func (this *TaskPool) Run() {
-	this.run()
-}
-
-func (this *TaskPool) run() {
-	this.mu.Lock()
-	if this.isRunning {
-		this.mu.Unlock()
-		return
-	}
-
-	this.isRunning = true
-	this.workerPool = pool4go.NewPool(func() (pool4go.Conn, error) {
-		var w = newWorker(this)
-		w.start()
-		return w, nil
-	})
-	this.workerPool.SetMaxIdleConns(this.maxWorker)
-	this.workerPool.SetMaxOpenConns(this.maxWorker)
-	this.closeChan = make(chan struct{}, 1)
-
-	this.mu.Unlock()
 
 	go func() {
+		var nTasks []*internal.Task
+	RunLoop:
 		for {
-			select {
-			case _, ok := <-this.taskEvent:
-				if !ok {
-					return
-				}
+			nTasks = nTasks[0:0]
+			this.queue.Dequeue(&nTasks)
 
-				var t = this.taskList.PopFront()
-				if t != nil {
-					var w = this.getWorker()
-					if w != nil {
-						w.do(t.(func()))
-					}
+			for _, nTask := range nTasks {
+				if nTask == nil {
+					break RunLoop
 				}
-			case <-this.closeChan:
-				return
+				this.dispatch <- nTask
 			}
 		}
+		atomic.SwapInt32(&this.closed, 1)
+		close(this.dispatch)
 	}()
 }
 
-func (this *TaskPool) Stop() {
-	this.mu.Lock()
-	defer this.mu.Unlock()
+func (this *Pool) Close() {
+	if atomic.LoadInt32(&this.closed) == 1 {
+		return
+	}
+	this.queue.Enqueue(nil)
+}
 
-	if this.isRunning == false {
+func (this *Pool) Add(fn func(payload interface{}), payload interface{}) {
+	if fn == nil {
 		return
 	}
 
-	close(this.closeChan)
-	this.isRunning = false
-
-	this.workerPool.Close()
-	this.workerPool = nil
-}
-
-func (this *TaskPool) SetMaxWorker(n int) {
-	this.maxWorker = n
-	if this.workerPool != nil {
-		this.workerPool.SetMaxOpenConns(this.maxWorker)
-		this.workerPool.SetMaxIdleConns(this.maxWorker)
+	if atomic.LoadInt32(&this.closed) == 1 {
+		return
 	}
-}
 
-func (this *TaskPool) MaxWorker() int {
-	return this.maxWorker
-}
-
-func (this *TaskPool) NumTask() int {
-	return len(this.taskEvent)
+	var nTask = internal.NewTask(fn, payload)
+	this.queue.Enqueue(nTask)
 }
