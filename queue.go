@@ -1,30 +1,30 @@
-package internal
+package task4go
 
 import (
 	"sync"
 )
 
-type Queue struct {
+type queue struct {
 	cond  *sync.Cond
-	tasks []*Task
+	tasks []*task
 }
 
-func NewQueue() *Queue {
-	var q = &Queue{}
+func newQueue() *queue {
+	var q = &queue{}
 	q.cond = sync.NewCond(&sync.Mutex{})
-	q.tasks = make([]*Task, 0, 128)
+	q.tasks = make([]*task, 0, 128)
 	return q
 }
 
-func (this *Queue) Enqueue(task *Task) {
+func (this *queue) enqueue(t *task) {
 	this.cond.L.Lock()
-	this.tasks = append(this.tasks, task)
+	this.tasks = append(this.tasks, t)
 	this.cond.L.Unlock()
 
 	this.cond.Signal()
 }
 
-func (this *Queue) Dequeue(tasks *[]*Task) {
+func (this *queue) dequeue(tasks *[]*task) {
 	this.cond.L.Lock()
 	for len(this.tasks) == 0 {
 		this.cond.Wait()

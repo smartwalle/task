@@ -1,53 +1,72 @@
 package task4go
 
 import (
-	"github.com/smartwalle/task4go/internal"
 	"sync"
 	"sync/atomic"
 )
 
-type Manager struct {
+type Manager interface {
+	Run()
+
+	Close()
+
+	Add(fn func(arg interface{}), opts ...TaskOption)
+}
+
+type manager struct {
 	worker   int
-	queue    *internal.Queue
-	dispatch chan *internal.Task
+	waiter   Waiter
+	queue    *queue
+	pool     *sync.Pool
+	dispatch chan *task
 	runOnce  sync.Once
 	closed   int32
-	waiter   Waiter
 }
 
-func New(worker int, waiter Waiter) *Manager {
-	if waiter == nil {
-		waiter = &sync.WaitGroup{}
+func New(opts ...ManagerOption) Manager {
+	var m = &manager{}
+	m.queue = newQueue()
+	m.pool = &sync.Pool{
+		New: func() interface{} {
+			return &task{}
+		},
+	}
+	m.dispatch = make(chan *task, 1)
+	m.closed = 0
+
+	for _, opt := range opts {
+		opt(m)
 	}
 
-	var p = &Manager{}
-	p.worker = worker
-	p.queue = internal.NewQueue()
-	p.dispatch = make(chan *internal.Task, 1)
-	p.closed = 0
-	p.waiter = waiter
-	return p
+	if m.worker <= 0 {
+		m.worker = 1
+	}
+	if m.waiter == nil {
+		m.waiter = &sync.WaitGroup{}
+	}
+	return m
 }
 
-func (this *Manager) Run() {
+func (this *manager) Run() {
 	this.runOnce.Do(this.run)
 }
-func (this *Manager) run() {
+
+func (this *manager) run() {
 	for i := 0; i < this.worker; i++ {
 		this.waiter.Add(1)
-		var w = internal.NewWorker(i+1, this.dispatch)
+		var w = newWorker(i+1, this.dispatch, this.pool)
 		go func() {
-			w.Run()
+			w.run()
 			this.waiter.Done()
 		}()
 	}
 
 	go func() {
-		var nTasks []*internal.Task
+		var nTasks []*task
 	RunLoop:
 		for {
 			nTasks = nTasks[0:0]
-			this.queue.Dequeue(&nTasks)
+			this.queue.dequeue(&nTasks)
 
 			for _, nTask := range nTasks {
 				if nTask == nil {
@@ -56,19 +75,17 @@ func (this *Manager) run() {
 				this.dispatch <- nTask
 			}
 		}
-		atomic.SwapInt32(&this.closed, 1)
 		close(this.dispatch)
 	}()
 }
 
-func (this *Manager) Close() {
-	if atomic.LoadInt32(&this.closed) == 1 {
-		return
+func (this *manager) Close() {
+	if atomic.CompareAndSwapInt32(&this.closed, 0, 1) {
+		this.queue.enqueue(nil)
 	}
-	this.queue.Enqueue(nil)
 }
 
-func (this *Manager) Add(fn func(payload interface{}), payload interface{}) {
+func (this *manager) Add(fn func(arg interface{}), opts ...TaskOption) {
 	if fn == nil {
 		return
 	}
@@ -77,6 +94,13 @@ func (this *Manager) Add(fn func(payload interface{}), payload interface{}) {
 		return
 	}
 
-	var nTask = internal.NewTask(fn, payload)
-	this.queue.Enqueue(nTask)
+	var nTask, _ = this.pool.Get().(*task)
+	nTask.fn = fn
+	nTask.arg = nil
+
+	for _, opt := range opts {
+		opt(nTask)
+	}
+
+	this.queue.enqueue(nTask)
 }
