@@ -25,14 +25,16 @@ RunLoop:
 				break RunLoop
 			}
 
-			if t != nil {
-				if t.fn != nil {
-					t.fn(t.arg)
-				}
-
-				t.reset()
-				this.pool.Put(t)
+			if t == nil {
+				continue
 			}
+
+			if t.fn != nil {
+				t.fn(t.arg)
+			}
+
+			t.reset()
+			this.pool.Put(t)
 		}
 	}
 }
