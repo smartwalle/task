@@ -13,10 +13,12 @@ func main() {
 	p.Run()
 
 	go func() {
+		var i = 0
 		for {
+			i++
 			p.Add(func(arg interface{}) {
-				fmt.Println("xxx", arg)
-			}, task4go.WithArg("hello"))
+				fmt.Println("hello", arg)
+			}, task4go.WithArg(i))
 
 			time.Sleep(time.Millisecond * 100)
 		}
