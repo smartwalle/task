@@ -9,14 +9,14 @@ import (
 
 func main() {
 	var waiter = &sync.WaitGroup{}
-	var p = task4go.New(task4go.WithWaiter(waiter))
-	p.Run()
+	var m = task4go.New(task4go.WithWaiter(waiter))
+	m.Run()
 
 	go func() {
 		var i = 0
 		for {
 			i++
-			p.Add(func(arg interface{}) {
+			m.AddTask(func(arg interface{}) {
 				fmt.Println("hello", arg)
 			}, task4go.WithArg(i))
 
@@ -25,11 +25,11 @@ func main() {
 	}()
 
 	time.AfterFunc(time.Second*10, func() {
-		p.Close()
-		p.Close()
-		p.Close()
-		p.Close()
-		p.Close()
+		m.Close()
+		m.Close()
+		m.Close()
+		m.Close()
+		m.Close()
 	})
 
 	fmt.Println("wait..")

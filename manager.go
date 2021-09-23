@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrClosed = errors.New("closed")
+	ErrClosed  = errors.New("task manager closed")
+	ErrBadTask = errors.New("bad task")
 )
 
 type Manager interface {
@@ -15,7 +16,7 @@ type Manager interface {
 
 	Close()
 
-	Add(fn func(arg interface{}), opts ...TaskOption)
+	AddTask(fn func(arg interface{}), opts ...TaskOption) error
 }
 
 type manager struct {
@@ -90,13 +91,13 @@ func (this *manager) Close() {
 	}
 }
 
-func (this *manager) Add(fn func(arg interface{}), opts ...TaskOption) {
+func (this *manager) AddTask(fn func(arg interface{}), opts ...TaskOption) error {
 	if fn == nil {
-		return
+		return ErrBadTask
 	}
 
 	if atomic.LoadInt32(&this.closed) == 1 {
-		return
+		return ErrClosed
 	}
 
 	var nTask, _ = this.pool.Get().(*task)
@@ -108,4 +109,5 @@ func (this *manager) Add(fn func(arg interface{}), opts ...TaskOption) {
 	}
 
 	this.queue.enqueue(nTask)
+	return nil
 }
