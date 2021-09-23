@@ -1,8 +1,13 @@
 package task4go
 
 import (
+	"errors"
 	"sync"
 	"sync/atomic"
+)
+
+var (
+	ErrClosed = errors.New("closed")
 )
 
 type Manager interface {
@@ -52,9 +57,9 @@ func (this *manager) Run() {
 }
 
 func (this *manager) run() {
-	for i := 0; i < this.worker; i++ {
+	for i := 1; i <= this.worker; i++ {
 		this.waiter.Add(1)
-		var w = newWorker(i+1, this.dispatch, this.pool)
+		var w = newWorker(i, this.dispatch, this.pool)
 		go func() {
 			w.run()
 			this.waiter.Done()
