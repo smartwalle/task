@@ -41,7 +41,9 @@ func New(opts ...ManagerOption) Manager {
 	m.closed = 0
 
 	for _, opt := range opts {
-		opt(m)
+		if opt != nil {
+			opt(m)
+		}
 	}
 
 	if m.worker <= 0 {
@@ -105,7 +107,9 @@ func (this *manager) AddTask(fn func(arg interface{}), opts ...TaskOption) error
 	nTask.arg = nil
 
 	for _, opt := range opts {
-		opt(nTask)
+		if opt != nil {
+			opt(nTask)
+		}
 	}
 
 	this.queue.enqueue(nTask)
