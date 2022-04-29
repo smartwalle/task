@@ -2,6 +2,7 @@ package task4go
 
 import (
 	"errors"
+	"github.com/smartwalle/queue/block"
 	"sync"
 	"sync/atomic"
 )
@@ -22,7 +23,7 @@ type Manager interface {
 type manager struct {
 	worker   int
 	waiter   Waiter
-	queue    *queue
+	queue    block.Queue[*task]
 	pool     *sync.Pool
 	dispatch chan *task
 	runOnce  sync.Once
@@ -31,7 +32,7 @@ type manager struct {
 
 func New(opts ...ManagerOption) Manager {
 	var m = &manager{}
-	m.queue = newQueue()
+	m.queue = block.New[*task]()
 	m.pool = &sync.Pool{
 		New: func() interface{} {
 			return &task{}
@@ -74,13 +75,14 @@ func (this *manager) run() {
 	RunLoop:
 		for {
 			nTasks = nTasks[0:0]
-			this.queue.dequeue(&nTasks)
+			var ok = this.queue.Dequeue(&nTasks)
 
 			for _, nTask := range nTasks {
-				if nTask == nil {
-					break RunLoop
-				}
 				this.dispatch <- nTask
+			}
+
+			if ok == false {
+				break RunLoop
 			}
 		}
 		close(this.dispatch)
@@ -89,7 +91,7 @@ func (this *manager) run() {
 
 func (this *manager) Close() {
 	if atomic.CompareAndSwapInt32(&this.closed, 0, 1) {
-		this.queue.enqueue(nil)
+		this.queue.Close()
 	}
 }
 
@@ -112,6 +114,8 @@ func (this *manager) AddTask(fn func(arg interface{}), opts ...TaskOption) error
 		}
 	}
 
-	this.queue.enqueue(nTask)
+	if this.queue.Enqueue(nTask) == false {
+		return ErrClosed
+	}
 	return nil
 }

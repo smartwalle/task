@@ -1,3 +1,7 @@
 module github.com/smartwalle/task4go
 
-go 1.17
+require (
+	github.com/smartwalle/queue v0.0.1
+)
+
+go 1.18

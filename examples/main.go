@@ -9,7 +9,7 @@ import (
 
 func main() {
 	var waiter = &sync.WaitGroup{}
-	var m = task4go.New(task4go.WithWaiter(waiter))
+	var m = task4go.New(task4go.WithWaiter(waiter), task4go.WithWorker(10))
 	m.Run()
 
 	go func() {
