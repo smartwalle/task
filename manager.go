@@ -21,29 +21,34 @@ type Manager interface {
 }
 
 type manager struct {
-	worker   int
-	waiter   Waiter
-	queue    block.Queue[*task]
+	*option
 	pool     *sync.Pool
+	queue    block.Queue[*task]
 	dispatch chan *task
 	runOnce  sync.Once
 	closed   int32
 }
 
-func New(opts ...ManagerOption) Manager {
-	var m = &manager{}
-	m.queue = block.New[*task]()
-	m.pool = &sync.Pool{
+func New(opts ...Option) Manager {
+	var pool = &sync.Pool{
 		New: func() interface{} {
 			return &task{}
 		},
 	}
+	return newManager(pool, opts...)
+}
+
+func newManager(pool *sync.Pool, opts ...Option) *manager {
+	var m = &manager{}
+	m.option = &option{}
+	m.pool = pool
+	m.queue = block.New[*task]()
 	m.dispatch = make(chan *task, 1)
 	m.closed = 0
 
 	for _, opt := range opts {
 		if opt != nil {
-			opt(m)
+			opt(m.option)
 		}
 	}
 
@@ -104,9 +109,8 @@ func (this *manager) AddTask(fn func(arg interface{}), opts ...TaskOption) error
 		return ErrClosed
 	}
 
-	var nTask, _ = this.pool.Get().(*task)
+	var nTask = this.pool.Get().(*task)
 	nTask.fn = fn
-	nTask.arg = nil
 
 	for _, opt := range opts {
 		if opt != nil {

@@ -1,6 +1,8 @@
 package task4go
 
-import "sync"
+import (
+	"sync"
+)
 
 type worker struct {
 	index int

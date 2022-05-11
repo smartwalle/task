@@ -2,7 +2,7 @@ module github.com/smartwalle/task4go/examples
 
 require (
 	github.com/smartwalle/task4go v0.0.0
-	github.com/smartwalle/queue v0.0.1
+	github.com/smartwalle/queue v0.0.2
 )
 
 replace (
