@@ -1,4 +1,4 @@
-package task4go
+package task
 
 type Waiter interface {
 	Add(delta int)

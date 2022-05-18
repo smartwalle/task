@@ -1,4 +1,4 @@
-package task4go
+package task
 
 type Option func(m *option)
 

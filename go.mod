@@ -1,4 +1,4 @@
-module github.com/smartwalle/task4go
+module github.com/smartwalle/task
 
 require github.com/smartwalle/queue v0.0.2
 

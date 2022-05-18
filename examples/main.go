@@ -2,14 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/smartwalle/task4go"
+	"github.com/smartwalle/task"
 	"sync"
 	"time"
 )
 
 func main() {
 	var waiter = &sync.WaitGroup{}
-	var m = task4go.New(task4go.WithWaiter(waiter), task4go.WithWorker(10))
+	var m = task.New(task.WithWaiter(waiter), task.WithWorker(10))
 	m.Run()
 
 	go func() {
@@ -18,7 +18,7 @@ func main() {
 			i++
 			m.AddTask(func(arg interface{}) {
 				fmt.Println("hello", arg)
-			}, task4go.WithArg(i))
+			}, task.WithArg(i))
 
 			time.Sleep(time.Millisecond * 100)
 		}

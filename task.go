@@ -1,4 +1,4 @@
-package task4go
+package task
 
 type task struct {
 	key int64
