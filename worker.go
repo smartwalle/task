@@ -31,8 +31,8 @@ RunLoop:
 				continue
 			}
 
-			if t.fn != nil {
-				t.fn(t.arg)
+			if t.handler != nil {
+				t.handler(t.arg)
 			}
 
 			t.reset()

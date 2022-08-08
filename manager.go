@@ -17,7 +17,7 @@ type Manager interface {
 
 	Close()
 
-	AddTask(fn func(arg interface{}), opts ...TaskOption) error
+	AddTask(handler func(arg interface{}), opts ...TaskOption) error
 }
 
 type manager struct {
@@ -100,8 +100,8 @@ func (this *manager) Close() {
 	}
 }
 
-func (this *manager) AddTask(fn func(arg interface{}), opts ...TaskOption) error {
-	if fn == nil {
+func (this *manager) AddTask(handler func(arg interface{}), opts ...TaskOption) error {
+	if handler == nil {
 		return ErrBadTask
 	}
 
@@ -110,7 +110,7 @@ func (this *manager) AddTask(fn func(arg interface{}), opts ...TaskOption) error
 	}
 
 	var nTask = this.pool.Get().(*task)
-	nTask.fn = fn
+	nTask.handler = handler
 
 	for _, opt := range opts {
 		if opt != nil {

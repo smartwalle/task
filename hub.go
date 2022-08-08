@@ -59,13 +59,13 @@ func (this *hub) Close() {
 	}
 }
 
-func (this *hub) AddTask(fn func(arg interface{}), opts ...TaskOption) error {
-	if fn == nil {
+func (this *hub) AddTask(handler func(arg interface{}), opts ...TaskOption) error {
+	if handler == nil {
 		return ErrBadTask
 	}
 
 	var nTask = this.pool.Get().(*task)
-	nTask.fn = fn
+	nTask.handler = handler
 
 	for _, opt := range opts {
 		if opt != nil {
