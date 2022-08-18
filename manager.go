@@ -21,7 +21,7 @@ type Manager interface {
 }
 
 type manager struct {
-	*option
+	*options
 	pool     *sync.Pool
 	queue    block.Queue[*task]
 	dispatch chan *task
@@ -40,7 +40,7 @@ func New(opts ...Option) Manager {
 
 func newManager(pool *sync.Pool, opts ...Option) *manager {
 	var m = &manager{}
-	m.option = &option{}
+	m.options = &options{}
 	m.pool = pool
 	m.queue = block.New[*task]()
 	m.dispatch = make(chan *task, 1)
@@ -48,7 +48,7 @@ func newManager(pool *sync.Pool, opts ...Option) *manager {
 
 	for _, opt := range opts {
 		if opt != nil {
-			opt(m.option)
+			opt(m.options)
 		}
 	}
 

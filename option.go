@@ -1,21 +1,21 @@
 package task
 
-type Option func(m *option)
+type Option func(m *options)
 
-type option struct {
+type options struct {
 	worker int
 	waiter Waiter
 }
 
 func WithWorker(worker int) Option {
-	return func(m *option) {
-		m.worker = worker
+	return func(opts *options) {
+		opts.worker = worker
 	}
 }
 
 func WithWaiter(waiter Waiter) Option {
-	return func(m *option) {
-		m.waiter = waiter
+	return func(opts *options) {
+		opts.waiter = waiter
 	}
 }
 

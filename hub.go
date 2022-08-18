@@ -13,19 +13,19 @@ type hub struct {
 }
 
 func NewHub(opts ...Option) Manager {
-	var nOpt = &option{}
+	var nOpts = &options{}
 
 	for _, opt := range opts {
 		if opt != nil {
-			opt(nOpt)
+			opt(nOpts)
 		}
 	}
 
-	if nOpt.worker <= 0 {
-		nOpt.worker = 1
+	if nOpts.worker <= 0 {
+		nOpts.worker = 1
 	}
-	if nOpt.waiter == nil {
-		nOpt.waiter = &sync.WaitGroup{}
+	if nOpts.waiter == nil {
+		nOpts.waiter = &sync.WaitGroup{}
 	}
 
 	var pool = &sync.Pool{
@@ -35,11 +35,11 @@ func NewHub(opts ...Option) Manager {
 	}
 
 	var nHub = &hub{}
-	nHub.worker = int64(nOpt.worker)
+	nHub.worker = int64(nOpts.worker)
 	nHub.manages = make([]*manager, nHub.worker)
 	nHub.pool = pool
 	for idx := range nHub.manages {
-		nHub.manages[idx] = newManager(nHub.pool, WithWorker(1), WithWaiter(nOpt.waiter))
+		nHub.manages[idx] = newManager(nHub.pool, WithWorker(1), WithWaiter(nOpts.waiter))
 	}
 
 	return nHub
