@@ -6,9 +6,9 @@ import (
 )
 
 type hub struct {
-	worker  int64
-	manages []*manager
 	pool    *sync.Pool
+	manages []*manager
+	worker  int64
 	runOnce sync.Once
 }
 

@@ -1,9 +1,9 @@
 package task
 
 type task struct {
-	key     int64
 	arg     interface{}
 	handler func(interface{})
+	key     int64
 }
 
 func (this *task) reset() {

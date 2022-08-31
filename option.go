@@ -3,8 +3,8 @@ package task
 type Option func(m *options)
 
 type options struct {
-	worker int
 	waiter Waiter
+	worker int
 }
 
 func WithWorker(worker int) Option {

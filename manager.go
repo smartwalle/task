@@ -21,7 +21,7 @@ type Manager interface {
 }
 
 type manager struct {
-	*options
+	options  *options
 	pool     *sync.Pool
 	queue    block.Queue[*task]
 	dispatch chan *task
@@ -52,11 +52,11 @@ func newManager(pool *sync.Pool, opts ...Option) *manager {
 		}
 	}
 
-	if m.worker <= 0 {
-		m.worker = 1
+	if m.options.worker <= 0 {
+		m.options.worker = 1
 	}
-	if m.waiter == nil {
-		m.waiter = &sync.WaitGroup{}
+	if m.options.waiter == nil {
+		m.options.waiter = &sync.WaitGroup{}
 	}
 	return m
 }
@@ -66,12 +66,12 @@ func (this *manager) Run() {
 }
 
 func (this *manager) run() {
-	for i := 1; i <= this.worker; i++ {
-		this.waiter.Add(1)
+	for i := 1; i <= this.options.worker; i++ {
+		this.options.waiter.Add(1)
 		var w = newWorker(i, this.dispatch, this.pool)
 		go func() {
 			w.run()
-			this.waiter.Done()
+			this.options.waiter.Done()
 		}()
 	}
 

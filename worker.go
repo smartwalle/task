@@ -5,9 +5,9 @@ import (
 )
 
 type worker struct {
-	index int
 	task  chan *task
 	pool  *sync.Pool
+	index int
 }
 
 func newWorker(index int, task chan *task, pool *sync.Pool) *worker {
