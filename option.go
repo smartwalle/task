@@ -1,6 +1,6 @@
 package task
 
-type Option func(m *options)
+type Option func(opts *options)
 
 type options struct {
 	waiter Waiter
